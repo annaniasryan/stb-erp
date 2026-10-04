@@ -453,7 +453,14 @@ $("#btn-user").addEventListener("click",()=>{const b=$("#btn-user");if(b.dataset
   if(!window.supabase||!CFG.SUPABASE_URL||/YOUR-/.test(CFG.SUPABASE_URL+CFG.SUPABASE_ANON_KEY)){
     gate("Aplikasi belum dikonfigurasi. Isi SUPABASE_URL dan SUPABASE_ANON_KEY di config.js.",[]);return}
   S.sb=window.supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-  const{data:{session}}=await S.sb.auth.getSession();
-  if(session)enter(session);else gate();
+  const q=new URLSearchParams(location.search+"&"+location.hash.replace(/^#/,""));
+  const urlErr=q.get("error_description")||q.get("error");
+  const{data:{session},error:sErr}=await S.sb.auth.getSession();
+  if(session)enter(session);
+  else if(urlErr||sErr){const msg=(urlErr||sErr.message||"").replace(/\+/g," ");
+    console.error("Login error:",msg,q.get("error_code")||"");
+    history.replaceState(null,"",location.pathname);
+    gate("Login gagal: "+msg+". Screenshot pesan ini dan kirim ke admin kalender.",[loginBtn("Coba lagi")]);}
+  else gate();
   S.sb.auth.onAuthStateChange((ev,sess)=>{if(sess&&!booted)enter(sess);if(ev==="SIGNED_OUT"){booted=false;gate()}});
 })();
