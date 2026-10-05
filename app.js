@@ -95,6 +95,7 @@ function render(){
   // buttons
   const can=S.db&&!S.readOnly&&S.canWrite!==false;
   $("#btn-add").hidden=!can||S.demo;$("#btn-import").hidden=!can||S.demo;$("#btn-fac").hidden=!(S.db&&S.canAdmin)||S.demo;
+  $("#more").hidden=$("#btn-import").hidden&&$("#btn-fac").hidden;
   renderBanner();
   const v=$("#view");
   v.replaceChildren(S.view==="kalender"?viewMonth(cm):S.view==="fasilitas"?viewFac(cm):viewAgenda(cm));
@@ -374,8 +375,9 @@ document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",(
 $("#fac-filter").addEventListener("change",e=>{S.fac=e.target.value;render()});
 $("#clash-pill").addEventListener("click",()=>{S.view="agenda";S.onlyClash=true;render()});
 $("#btn-add").addEventListener("click",()=>openForm(null,{date:S.view==="fasilitas"?S.day:(S.month.getMonth()===new Date().getMonth()?TODAY:iso(S.month))}));
-$("#btn-import").addEventListener("click",openImport);
-$("#btn-fac").addEventListener("click",openFacilities);
+$("#btn-import").addEventListener("click",()=>{$("#more").open=false;openImport()});
+$("#btn-fac").addEventListener("click",()=>{$("#more").open=false;openFacilities()});
+document.addEventListener("click",e=>{const m=$("#more");if(m.open&&!m.contains(e.target))m.open=false});
 render();
 
 
@@ -436,7 +438,8 @@ async function enter(session){
       [h("button",{class:"btn primary",type:"button",onclick:async()=>{await S.sb.auth.signOut();signIn()}},"Ganti akun"),h("button",{class:"btn",type:"button",onclick:signOut},"Keluar")]);return}
   S.role=prof.role;S.myUnit=prof.unit||null;S.canAdmin=S.role==="admin";S.canWrite=S.role!=="viewer";S.readOnly=!S.canWrite;
   $("#gate").hidden=true;$("#app").hidden=false;
-  $("#btn-user").replaceChildren(S.myName,h("span",{class:"role"},S.role==="admin"?"admin":S.role==="viewer"?"lihat":"editor"));
+  const ini=(S.myName||"?").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join("");
+  $("#btn-user").replaceChildren(h("span",{class:"avatar"},ini),h("span",{class:"uname"},S.myName),h("span",{class:"role"},S.role==="admin"?"Admin":S.role==="viewer"?"Lihat":"Editor"));
   $("#btn-user").title=`${session.user.email} · klik untuk keluar`;
   render();
   try{await api.reload()}catch(e){S.error=errText(e);render()}
